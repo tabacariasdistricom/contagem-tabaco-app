@@ -1,5 +1,5 @@
 // Funciona sem rede: guarda a app e o catálogo. Mudar VERSAO quando se publica uma versão nova.
-const VERSAO = "tab-v16";
+const VERSAO = "tab-v17";
 const FICHEIROS = ["./", "./index.html", "./intermec.html", "./manifest-intermec.webmanifest", "./zxing.min.js", "./manifest.webmanifest", "./icon.svg", "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png", "./artigos.json"];
 self.addEventListener("install", e => e.waitUntil(caches.open(VERSAO).then(c => c.addAll(FICHEIROS)).then(() => self.skipWaiting())));
 self.addEventListener("activate", e => e.waitUntil(
