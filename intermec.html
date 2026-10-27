@@ -1,0 +1,542 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Contagem de tabaco (Intermec)</title>
+<meta name="theme-color" content="#7a3b1e">
+<link rel="manifest" href="manifest-intermec.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<style>
+:root{
+  --bg:#f5f0ea; --card:#ffffff; --ink:#221a15; --muted:#6f655d; --line:#dcd2c8;
+  --brand:#7a3b1e; --brand-ink:#ffffff; --accent:#d98e04; --warn:#b3261e; --ok:#1f7a4d; --campo:#ffffff; --campo-borda:#9c9189;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#171310; --card:#221c18; --ink:#efe9e3; --muted:#a79c93; --line:#3a312b;
+    --brand:#c2703f; --brand-ink:#170e08; --accent:#f0a820; --warn:#ff8a80; --ok:#5ed39b; --campo:#ffffff; --campo-borda:#9c9189;
+  }
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{font-size:16px}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  padding-bottom:calc(var(--dock-h) + 100px + env(safe-area-inset-bottom))}
+:root{--dock-h:52px}
+header{position:sticky;top:0;z-index:5;background:var(--brand);color:var(--brand-ink);padding:10px 16px 12px;padding-top:calc(10px + env(safe-area-inset-top))}
+header h1{font-size:1.05rem;margin:0 0 8px;font-weight:650}
+.controlos{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.controlos select,.controlos input{width:100%;min-height:44px;border-radius:10px;border:0;padding:0 10px;font:inherit;background:rgba(255,255,255,.95);color:#221a15}
+.controlos #leitura{min-height:48px;border:2px solid var(--accent);background:var(--campo);color:#000;font-size:1.1rem;min-width:0}
+.btn{min-height:48px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit;font-weight:600;padding:0 14px}
+.btn.principal{background:var(--brand);color:var(--brand-ink);border-color:var(--brand)}
+.btn.perigo{color:var(--warn)}
+.btn.larga{grid-column:1/-1}
+.aviso{font-size:.82rem;color:var(--muted);padding:2px 16px 6px}
+.res{padding:0 16px}
+.res button{display:block;width:100%;text-align:left;min-height:48px;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;padding:8px 12px;margin:6px 0;font:inherit}
+.res small{color:var(--muted)}
+.sel{margin:8px 16px;background:var(--card);border:2px solid var(--brand);border-radius:14px;padding:12px}
+.sel h2{margin:0;font-size:1.1rem;overflow-wrap:anywhere}
+.sel .meta{color:var(--muted);font-size:.85rem;margin:2px 0 10px}
+.sel .ja{font-weight:700;color:var(--ok)}
+.sel .qtd{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.sel .qtd input{grid-column:1/-1;min-height:56px;border-radius:12px;border:2px solid var(--campo-borda);background:var(--campo);color:#000;font:inherit;font-size:1.5rem;text-align:center}
+.sel .qtd input:focus{outline:3px solid var(--accent)}
+.sel .qtd .btn{min-height:52px}
+.sel .vol{display:grid;grid-template-columns:1fr auto 1fr 1.3fr;gap:8px;align-items:center;margin-top:8px}
+.sel .vol input{width:100%;min-height:52px;border-radius:12px;border:2px solid var(--campo-borda);background:var(--campo);color:#000;font:inherit;font-size:1.2rem;text-align:center;padding:0 2px}
+.sel .vol input:focus{outline:3px solid var(--accent)}
+.sel .vol .btn{min-height:52px;padding:0 6px}
+.sel.repetido{border-color:var(--warn)}
+.sel .repete{display:block;margin-top:4px;color:var(--warn);font-weight:700}
+main{padding:6px 16px}
+h3{font-size:.8rem;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin:14px 0 2px;font-weight:600}
+.linha{display:grid;grid-template-columns:minmax(0,1fr) 72px 44px;gap:6px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px;margin:6px 0}
+.linha.novo{border-color:var(--brand);box-shadow:inset 3px 0 0 var(--brand)}
+.linha .n{overflow-wrap:anywhere;font-size:.95rem}
+.linha .n small{display:block;color:var(--muted)}
+.linha input{width:100%;min-height:48px;border-radius:10px;border:2px solid var(--campo-borda);background:var(--campo);color:#000;font:inherit;font-size:1.1rem;text-align:center;padding:0 2px}
+.linha input:focus{outline:3px solid var(--accent)}
+.linha .x{min-height:44px;min-width:44px;border:0;background:transparent;color:var(--warn);font-size:1.2rem}
+.cod{display:inline-block;background:var(--brand);color:var(--brand-ink);border-radius:6px;padding:0 7px;font-size:.9em;font-weight:700;margin-right:4px}
+.vazio{color:var(--muted);text-align:center;padding:26px 0}
+.acoes{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px 16px 16px}
+.rodape{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);padding:10px 16px calc(10px + env(safe-area-inset-bottom));display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;z-index:6}
+.dock{order:-1;width:100%;display:flex;gap:8px;margin-bottom:10px}
+.dock[hidden]{display:none}
+.dock #b-cam{flex:1;height:var(--dock-h);font-size:1.6rem;border-radius:16px}
+.dock #b-voz{width:25%;height:var(--dock-h);border-radius:16px;font-size:2rem;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.1}
+.dock #b-voz small{font-size:.75rem;font-weight:600}
+.dock #b-voz[aria-pressed="true"]{background:var(--ok);color:#fff;border-color:var(--ok)}
+.dock #b-voz small{font-size:.9rem;font-weight:700}
+.rodape .num{font-size:1.25rem;font-weight:750}
+.rodape .sub{font-size:.8rem;color:var(--muted);text-align:right}
+dialog{border:0;border-radius:16px;padding:16px;max-width:94vw;width:440px;background:var(--card);color:var(--ink)}
+dialog::backdrop{background:rgba(0,0,0,.5)}
+dialog h2{margin:0 0 10px;font-size:1.1rem}
+dialog label{display:block;font-size:.85rem;color:var(--muted);margin:10px 0 4px}
+dialog input{width:100%;min-height:46px;border-radius:10px;border:1px solid var(--line);padding:0 10px;font:inherit;background:var(--bg);color:var(--ink)}
+dialog .fim{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
+video{width:100%;border-radius:12px;background:#000;max-height:60vh}
+.toast{position:fixed;left:16px;right:16px;bottom:calc(var(--dock-h) + 100px + env(safe-area-inset-bottom));background:#221a15;color:#fff;border-radius:12px;padding:12px 14px;z-index:9;display:none}
+</style>
+</head>
+<body>
+<header>
+  <h1>Contagem de tabaco</h1>
+  <div class="controlos">
+    <select id="loja" aria-label="Loja">
+      <option value="1">Loja 1 · Raimundo</option>
+      <option value="2">Loja 2 · Mourão</option>
+      <option value="3">Loja 3 · Carlitos</option>
+      <option value="4">Loja 4 · Luanda</option>
+    </select>
+    <input id="data" type="date" aria-label="Data da contagem">
+    <input id="func" placeholder="Funcionária" maxlength="40" autocapitalize="characters" aria-label="Funcionária">
+    <input id="leitura" inputmode="none" enterkeyhint="enter" autocomplete="off" autocapitalize="off" placeholder="Código ou nome" aria-label="Código de barras, código do produto ou nome">
+  </div>
+</header>
+<div class="aviso" id="aviso"></div>
+<div class="res" id="res"></div>
+
+<section class="sel" id="sel" hidden>
+  <h2 id="s-nome"></h2>
+  <div class="meta" id="s-meta"></div>
+  <div class="qtd">
+    <input id="s-qtd" inputmode="none" pattern="[0-9]*" placeholder="Quantidade (vazio = 1)" aria-label="Quantidade de maços">
+    <button class="btn principal" id="s-somar">Somar</button>
+    <button class="btn" id="s-subst">Substituir</button>
+  </div>
+  <div class="vol">
+    <input id="s-vol" inputmode="none" pattern="[0-9]*" placeholder="Volumes" aria-label="Volumes completos">
+    <span>×</span>
+    <input id="s-mpv" inputmode="none" pattern="[0-9]*" placeholder="Maços" aria-label="Maços por volume">
+    <button class="btn" id="s-volsomar">+ Volumes</button>
+  </div>
+</section>
+
+<main>
+  <h3>Contados <span id="n-cont"></span></h3>
+  <div id="lista"></div>
+</main>
+
+<div class="acoes">
+  <button class="btn" id="b-novo">+ Artigo fora da lista</button>
+  <button class="btn principal" id="b-enviar">Enviar contagem</button>
+  <button class="btn" id="b-desfazer" disabled>↩ Desfazer última</button>
+  <button class="btn perigo" id="b-limpar">Limpar tudo</button>
+</div>
+
+<div class="rodape">
+  <div class="dock" id="dock" hidden>
+    <button class="btn principal" id="b-cam" aria-label="Ler com a câmara" hidden>📷 Picar</button><button class="btn" id="b-teclado" aria-pressed="false" style="flex:1;height:var(--dock-h)">⌨ Teclado do ecrã: OFF</button>
+    <button class="btn" id="b-voz" aria-label="Comando de voz" aria-pressed="false" hidden>🎤<small>Voz</small></button>
+  </div>
+  <div><div class="num" id="r-total">0 maços</div><div class="sub" style="text-align:left" id="r-valor">0 €</div></div>
+  <div class="sub" id="r-art">0 artigos</div>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<dialog id="d-cam">
+  <h2>Apontar ao código de barras</h2>
+  <video id="video" playsinline muted></video>
+  <div class="fim"><button class="btn principal" id="c-fechar">Fechar</button></div>
+</dialog>
+
+<dialog id="d-novo">
+  <h2>Artigo fora da lista</h2>
+  <label for="n-cb">Código de barras</label>
+  <input id="n-cb" inputmode="numeric" pattern="[0-9]*">
+  <label for="n-nome">Nome</label>
+  <input id="n-nome" maxlength="60">
+  <label for="n-qtd">Quantidade</label>
+  <input id="n-qtd" inputmode="numeric" pattern="[0-9]*">
+  <div class="fim"><button class="btn" id="n-cancel">Cancelar</button><button class="btn principal" id="n-ok">Guardar</button></div>
+</dialog>
+
+<script>
+"use strict";
+const LOJAS = {1:"Raimundo", 2:"Mourao", 3:"Carlitos", 4:"Luanda"};
+let catalogo = {};      // loja -> [{c,d,b,s,p}]
+let estado = null;      // {loja, data, func, linhas:{codigo:{q,t}}, extras:[{c,d,b,s,p}]}
+let sel = null;         // artigo selecionado
+let indice = new Map(); // código de barras (sem zeros à esquerda) -> artigo
+
+const $ = id => document.getElementById(id);
+const hoje = () => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0,10); };
+const guardar = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} };
+const ler = (k, def) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : def; } catch(e){ return def; } };
+const chave = (loja, data) => `tab:${loja}:${data}`;
+const num = v => { const n = parseInt(v, 10); return Number.isFinite(n) && n > 0 ? n : 0; };
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const norm = s => String(s).normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+const cb = s => String(s || "").replace(/\D/g, "").replace(/^0+/, "");
+const eur = n => n.toLocaleString("pt-PT", {minimumFractionDigits:2, maximumFractionDigits:2}) + " €";
+const dmy = d => d.split("-").reverse().join("-");
+function toast(msg){ const t = $("toast"); t.textContent = msg; t.style.display = "block"; clearTimeout(toast.h); toast.h = setTimeout(() => t.style.display = "none", 3000); }
+function bip(ok){
+  try { navigator.vibrate && navigator.vibrate(ok ? 40 : [80, 60, 80]); } catch(e){}
+  try {
+    const a = bip.a = bip.a || new (window.AudioContext || window.webkitAudioContext)(), o = a.createOscillator(), g = a.createGain();
+    o.frequency.value = ok ? 1000 : 300; g.gain.value = .08; o.connect(g); g.connect(a.destination); o.start(); o.stop(a.currentTime + .09);
+  } catch(e){}
+}
+
+async function carregarCatalogo(){
+  try {
+    const r = await fetch("artigos.json?x=" + Date.now()), j = await r.json();
+    catalogo = j.lojas; guardar("tab:catalogo", j);
+    $("aviso").textContent = "Catálogo de " + j.gerado;
+  } catch(e) {
+    const j = ler("tab:catalogo", null);
+    catalogo = j ? j.lojas : {};
+    $("aviso").textContent = j ? "Sem ligação: catálogo de " + j.gerado + " guardado no telemóvel." : "Sem catálogo: usa «+ Artigo fora da lista».";
+  }
+}
+
+// lista de funcionárias (funcionarias.json, opcional): troca o campo de texto por uma lista de escolha
+async function carregarFuncionarias(){
+  let nomes;
+  try { const r = await fetch("funcionarias.json?x=" + Date.now()); if (!r.ok) throw 0; nomes = await r.json(); guardar("tab:funcionarias", nomes); }
+  catch(e){ nomes = ler("tab:funcionarias", null); }
+  if (!Array.isArray(nomes) || !nomes.length) return;
+  const sel = document.createElement("select"); sel.id = "func"; sel.setAttribute("aria-label", "Funcionária");
+  const op = (v, t) => { const o = document.createElement("option"); o.value = v; o.textContent = t || v; return o; };
+  const montar = atual => {
+    sel.replaceChildren(op("", "Funcionária…"), ...nomes.map(n => op(n)));
+    if (atual && !nomes.includes(atual)) sel.appendChild(op(atual));
+    sel.appendChild(op("\u0000", "Outra…")); sel.value = atual || "";
+  };
+  montar(estado.func);
+  $("func").replaceWith(sel);
+  sel.addEventListener("change", () => {
+    let v = sel.value;
+    if (v === "\u0000") { v = (prompt("Nome da funcionária:") || "").trim().replace(/\s+/g, " ").toUpperCase().slice(0, 40); montar(v); }
+    estado.func = v; guardar("tab:func", v); guardarEstado();
+  });
+}
+
+const artigos = () => [...(catalogo[estado.loja] || []), ...estado.extras];
+function reindexar(){
+  indice = new Map();
+  for (const a of artigos()){ const k = cb(a.b); if (k) indice.set(k, a); }
+}
+
+const guardarEstado = () => { guardar(chave(estado.loja, estado.data), estado); guardar("tab:ultimo", {loja:estado.loja}); };
+function abrir(loja, data){
+  estado = ler(chave(loja, data), null) || {loja, data, linhas:{}, extras:[]};
+  estado.extras = [...estado.extras, ...ler("tab:extras:" + loja, []).filter(m => !estado.extras.some(e => e.b && e.b === m.b))];
+  if (!estado.func) estado.func = ler("tab:func", "");
+  const f = $("func");
+  if (f.tagName === "SELECT" && estado.func && ![...f.options].some(o => o.value === estado.func)) f.insertBefore(new Option(estado.func, estado.func), f.lastElementChild);
+  $("loja").value = loja; $("data").value = data; f.value = estado.func;
+  reindexar(); escolher(null); $("res").innerHTML = ""; desenhar();
+}
+
+// ---- procurar: só dígitos = código de barras (6+) ou código do produto (exato); senão, nome/código na lista ----
+// vivo: a escrever (só mostra a lista, não escolhe nada)
+function procurar(txt, vivo){
+  txt = txt.trim(); if (!txt) return;
+  const k = cb(txt);
+  if (/^\d+$/.test(txt.replace(/\s/g, "")) && !vivo){
+    const a = (k.length >= 6 && indice.get(k)) || artigos().find(x => String(x.c) === k);
+    if (a){ bip(true); $("res").innerHTML = ""; return escolher(a); }
+    if (k.length >= 6){
+      bip(false); escolher(null);
+      $("n-cb").value = txt.replace(/\D/g, ""); $("n-nome").value = ""; $("n-qtd").value = "";
+      toast("Código " + txt + " não está no catálogo desta loja.");
+      return $("d-novo").showModal();
+    }
+  }
+  const palavras = norm(txt).split(/\s+/);
+  const r = artigos().filter(a => { const n = norm(a.c + " " + a.d + " " + a.s); return palavras.every(p => n.includes(p)); }).slice(0, 25);
+  $("res").innerHTML = r.length ? r.map(a => `<button data-c="${esc(a.c)}"><b class="cod">${esc(a.c)}</b> ${esc(a.d)}<br><small>${esc(a.s)} · ${eur(a.p)}${estado.linhas[a.c] ? " · contado: " + estado.linhas[a.c].q : ""}</small></button>`).join("")
+    : '<div class="vazio">Nenhum artigo encontrado.</div>';
+}
+$("res").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  escolher(artigos().find(a => String(a.c) === b.dataset.c)); $("res").innerHTML = ""; $("leitura").value = "";
+});
+$("leitura").addEventListener("keydown", e => { if (e.key === "Enter"){ e.preventDefault(); procurar(e.target.value); } });
+$("leitura").addEventListener("input", e => {
+  const v = e.target.value.trim();
+  if (/^\d{6,}$/.test(v) || !v) $("res").innerHTML = ""; else procurar(v, true);
+});
+
+// ---- artigo selecionado: escrever a quantidade ----
+function escolher(a){
+  sel = a; $("sel").hidden = !a; if (!a) return;
+  const ja = (estado.linhas[a.c] || {}).q || 0;
+  $("s-nome").innerHTML = `<span class="cod">${String(a.c).startsWith("x") ? "—" : esc(a.c)}</span> ${esc(a.d)}`;
+  $("s-meta").innerHTML = `${esc(a.s)} · ${eur(a.p)} · ${a.b ? esc(a.b) : "sem código de barras"}<br>Já contado: <span class="ja">${ja}</span>` +
+    (ja ? `<b class="repete">⚠ Este artigo já foi picado. Se continuar, soma.</b>` : "");
+  $("sel").classList.toggle("repetido", ja > 0);
+  if (ja) { bip(false); toast(`Já picado: ${a.d} (${ja})`); }
+  $("s-qtd").value = ""; $("leitura").value = "";
+  $("s-vol").value = ""; $("s-mpv").value = ler(`tab:mpv:${estado.loja}:${a.c}`, 10);
+  $("sel").scrollIntoView({block:"nearest"}); $("s-qtd").focus();
+}
+function registar(c, antes){ (estado.hist = estado.hist || []).push({c, antes}); if (estado.hist.length > 100) estado.hist.shift(); }
+function desfazer(){
+  const h = estado.hist && estado.hist.pop();
+  if (!h) return toast("Nada para desfazer.");
+  if (h.antes) estado.linhas[h.c] = {...(estado.linhas[h.c] || {}), q: h.antes, t: Date.now()}; else delete estado.linhas[h.c];
+  estado.enviado = false; guardarEstado(); escolher(null); desenhar();
+  const a = artigos().find(x => String(x.c) === String(h.c));
+  toast(`Desfeito: ${a ? a.d : h.c} → ${h.antes}`);
+}
+function aplicarVolumes(n){
+  if (!sel) return;
+  n = n == null ? num($("s-vol").value) : n; const m = num($("s-mpv").value);
+  if (!n || !m) return toast("Escreve os volumes e os maços por volume.");
+  guardar(`tab:mpv:${estado.loja}:${sel.c}`, m);
+  aplicar(true, n * m);
+}
+function aplicar(somar, forcado){
+  if (!sel) return;
+  const txt = $("s-qtd").value.trim(), q = forcado != null ? forcado : (txt === "" ? 1 : num(txt));
+  if (forcado == null && txt !== "" && !q && !(txt === "0" && !somar)) return toast("Escreve uma quantidade.");
+  if (q > 500 && !confirm(`${q} maços de ${sel.d}. Está certo?`)) return;
+  const l = estado.linhas[sel.c] = estado.linhas[sel.c] || {q:0};
+  registar(sel.c, l.q);
+  l.q = somar ? l.q + q : q; l.t = Date.now(); estado.enviado = false;
+  if (!l.q) delete estado.linhas[sel.c];
+  guardarEstado(); const nome = sel.d, total = l.q; escolher(null); desenhar();
+  toast(`${nome} → ${total} ${total === 1 ? "maço" : "maços"}`);
+  $("leitura").focus();
+}
+$("s-somar").addEventListener("click", () => aplicar(true));
+$("s-subst").addEventListener("click", () => aplicar(false));
+$("s-volsomar").addEventListener("click", () => aplicarVolumes());
+$("s-vol").addEventListener("keydown", e => { if (e.key === "Enter"){ e.preventDefault(); aplicarVolumes(); } });
+$("b-desfazer").addEventListener("click", desfazer);
+$("s-qtd").addEventListener("keydown", e => { if (e.key === "Enter"){ e.preventDefault(); aplicar(true); } });
+
+// ---- lista dos contados ----
+function desenhar(){
+  const todos = artigos(), ids = Object.keys(estado.linhas);
+  const itens = ids.map(c => ({a: todos.find(a => String(a.c) === c), l: estado.linhas[c]})).filter(x => x.a)
+    .sort((x, y) => (y.l.t || 0) - (x.l.t || 0));
+  $("lista").innerHTML = itens.length ? itens.map(({a, l}) =>
+    `<div class="linha" data-c="${esc(a.c)}"><div class="n"><b class="cod">${String(a.c).startsWith("x") ? "—" : esc(a.c)}</b> ${esc(a.d)}<small>${esc(a.s)} · ${eur(a.p)}</small></div>` +
+    `<input inputmode="numeric" pattern="[0-9]*" value="${l.q}" aria-label="Quantidade de ${esc(a.d)}">` +
+    `<button class="x" aria-label="Remover">✕</button></div>`).join("") : '<div class="vazio">Ainda não há nada contado. Lê o primeiro código de barras.</div>';
+  $("n-cont").textContent = itens.length ? `(${itens.length})` : "";
+  $("b-desfazer").disabled = !(estado.hist && estado.hist.length);
+  totais(itens);
+}
+function totais(itens){
+  let q = 0, v = 0;
+  for (const {a, l} of itens){ q += l.q; v += l.q * a.p; }
+  $("r-total").textContent = q.toLocaleString("pt-PT") + (q === 1 ? " maço" : " maços");
+  $("r-valor").textContent = eur(v) + " a PVP";
+  $("r-art").textContent = itens.length + (itens.length === 1 ? " artigo" : " artigos");
+}
+$("lista").addEventListener("change", e => {
+  const inp = e.target.closest("input"); if (!inp) return;
+  const c = inp.closest(".linha").dataset.c, q = num(inp.value);
+  if (q > 500 && !confirm(`${q} maços. Está certo?`)) return desenhar();
+  registar(c, estado.linhas[c].q);
+  if (q) estado.linhas[c].q = q; else delete estado.linhas[c];
+  estado.enviado = false; guardarEstado(); desenhar();
+});
+$("lista").addEventListener("focusin", e => { if (e.target.matches("input")) setTimeout(() => e.target.select(), 0); });
+$("lista").addEventListener("click", e => {
+  const b = e.target.closest(".x"); if (!b) return;
+  const l = b.closest(".linha"), c = l.dataset.c, a = artigos().find(x => String(x.c) === c);
+  if (!confirm(`Remover ${a ? a.d : c} da contagem?`)) return;
+  registar(c, estado.linhas[c].q); delete estado.linhas[c]; guardarEstado(); desenhar();
+});
+
+// ---- cabeçalho ----
+function mudar(){ abrir(+$("loja").value, $("data").value || hoje()); }
+$("loja").addEventListener("change", mudar);
+$("data").addEventListener("change", mudar);
+$("func").addEventListener("change", e => {
+  estado.func = e.target.value.trim().replace(/\s+/g, " ").toUpperCase(); e.target.value = estado.func;
+  guardar("tab:func", estado.func); guardarEstado();
+});
+
+// ---- artigo fora da lista (ex.: novo no mercado, ainda sem ficha na loja) ----
+$("b-novo").addEventListener("click", () => { $("n-cb").value = ""; $("n-nome").value = ""; $("n-qtd").value = ""; $("d-novo").showModal(); });
+$("n-cancel").addEventListener("click", () => $("d-novo").close());
+$("n-ok").addEventListener("click", () => {
+  const b = $("n-cb").value.replace(/\D/g, ""), nome = $("n-nome").value.trim(), q = num($("n-qtd").value);
+  if (!nome) return toast("Escreve o nome.");
+  if (!q) return toast("Escreve a quantidade.");
+  const a = {c: "x" + (b || Date.now()), d: nome, b, s: "Fora da lista", p: 0};
+  estado.extras.push(a); guardar("tab:extras:" + estado.loja, [...ler("tab:extras:" + estado.loja, []), a]);
+  estado.linhas[a.c] = {q, t: Date.now()}; estado.enviado = false;
+  reindexar(); guardarEstado(); $("d-novo").close(); desenhar(); $("leitura").focus();
+});
+
+// ---- câmara (BarcodeDetector no Android; no iPhone, ZXing local descodifica as imagens do vídeo) ----
+let stream = null, ativa = false, ultimo = "", ultimoT = 0;
+function carregarZXing(){
+  if (window.ZXing) return Promise.resolve();
+  return new Promise((ok, falha) => {
+    const s = document.createElement("script"); s.src = "zxing.min.js"; s.onload = ok; s.onerror = falha;
+    document.head.appendChild(s);
+  });
+}
+function detetorZXing(){
+  const Z = window.ZXing, hints = new Map();
+  hints.set(Z.DecodeHintType.POSSIBLE_FORMATS, [Z.BarcodeFormat.EAN_13, Z.BarcodeFormat.EAN_8, Z.BarcodeFormat.UPC_A, Z.BarcodeFormat.UPC_E, Z.BarcodeFormat.CODE_128, Z.BarcodeFormat.ITF]);
+  hints.set(Z.DecodeHintType.TRY_HARDER, true);
+  const leitor = new Z.MultiFormatReader(); leitor.setHints(hints);
+  const cv = document.createElement("canvas"), cx = cv.getContext("2d", {willReadFrequently: true});
+  return {detect: async v => {
+    if (!v.videoWidth) return [];
+    const esc = Math.min(1, 1280 / v.videoWidth);
+    cv.width = Math.round(v.videoWidth * esc); cv.height = Math.round(v.videoHeight * esc);
+    cx.drawImage(v, 0, 0, cv.width, cv.height);
+    try {
+      const bm = new Z.BinaryBitmap(new Z.HybridBinarizer(new Z.HTMLCanvasElementLuminanceSource(cv)));
+      return [{rawValue: leitor.decode(bm).getText()}];
+    } catch(e){ return []; }
+  }};
+}
+async function abrirCamara(){
+  let det;
+  try {
+    if ("BarcodeDetector" in window) det = new BarcodeDetector({formats: ["ean_13", "ean_8", "upc_a", "upc_e", "code_128", "itf"]});
+    else { await carregarZXing(); det = detetorZXing(); }
+  } catch(e){ return toast("Não consegui carregar o leitor da câmara."); }
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({video: {facingMode: "environment"}, audio: false});
+  } catch(e){ return toast("Não consegui abrir a câmara (permissão?)."); }
+  const v = $("video"); v.srcObject = stream; await v.play().catch(() => {});
+  $("d-cam").showModal(); ativa = true;
+  (async function ciclo(){
+    while (ativa){
+      try {
+        const r = await det.detect(v);
+        if (r.length && ativa){
+          const val = r[0].rawValue, t = Date.now();
+          if (val !== ultimo || t - ultimoT > 2500){ ultimo = val; ultimoT = t; fecharCamara(); procurar(val); return; }
+        }
+      } catch(e){}
+      await new Promise(ok => setTimeout(ok, 150));
+    }
+  })();
+}
+function fecharCamara(){
+  ativa = false; if (stream) stream.getTracks().forEach(t => t.stop()); stream = null;
+  if ($("d-cam").open) $("d-cam").close();
+}
+$("c-fechar").addEventListener("click", fecharCamara);
+$("d-cam").addEventListener("close", fecharCamara);
+if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) { $("dock").hidden = false; $("b-cam").addEventListener("click", abrirCamara); }
+
+// ---- voz: dizer «picar» abre a câmara (reconhecimento de voz do navegador, precisa de internet) ----
+const RecVoz = window.SpeechRecognition || window.webkitSpeechRecognition;
+let voz = null, vozLigada = false, vozT = 0;
+const PALAVRAS = {zero:0,um:1,uma:1,dois:2,duas:2,tres:3,quatro:4,cinco:5,seis:6,sete:7,oito:8,nove:9,dez:10,onze:11,doze:12,treze:13,catorze:14,quatorze:14,quinze:15,
+  dezasseis:16,dezesseis:16,dezassete:17,dezessete:17,dezoito:18,dezanove:19,dezenove:19,vinte:20,trinta:30,quarenta:40,cinquenta:50,sessenta:60,setenta:70,oitenta:80,noventa:90,
+  cem:100,cento:100,duzentos:200,trezentos:300,quatrocentos:400,quinhentos:500};
+function numeroFalado(t){
+  const d = t.match(/\d+/); if (d) return +d[0];
+  const v = norm(t).split(/[\s,.-]+/).filter(p => p in PALAVRAS).map(p => PALAVRAS[p]);
+  return v.length ? v.reduce((s, n) => s + n, 0) : 0;
+}
+function mostrarVoz(){
+  const b = $("b-voz"); b.setAttribute("aria-pressed", vozLigada);
+  b.innerHTML = `🎤<small>Voz ${vozLigada ? "ON" : "OFF"}</small>`;
+}
+function pararVoz(){ vozLigada = false; if (voz) { try { voz.abort(); } catch(e){} } mostrarVoz(); }
+function ligarVoz(){
+  voz = new RecVoz(); voz.lang = "pt-PT"; voz.continuous = true; voz.interimResults = true;
+  voz.onresult = e => {
+    for (let i = e.resultIndex; i < e.results.length; i++){
+      const r = e.results[i], t = r[0].transcript;
+      if (/\b(picar|pica|picá|picado|pico|picou|bicar|pecar|ler|câmara|camara|câmera|scan|scanner|seguinte|próximo|proximo|código|codigo)\b/i.test(t) && !ativa && Date.now() - vozT > 3000){
+        vozT = Date.now(); try { voz.abort(); } catch(x){} abrirCamara(); return;
+      }
+      if (r.isFinal && !ativa && /\b(anular|anula|desfazer|desfaz)\b/i.test(t)){ desfazer(); return; }
+      if (r.isFinal && sel && !ativa){
+        const q = numeroFalado(t);
+        if (q){
+          toast(`Ouvi «${t.trim()}»`);
+          if (/volume|cart[aã]o|cart[oõ]es|caixa/i.test(t)) aplicarVolumes(q); else { $("s-qtd").value = q; aplicar(true); }
+          return;
+        }
+      }
+    }
+  };
+  voz.onend = () => { if (vozLigada) setTimeout(() => { if (vozLigada) try { voz.start(); } catch(e){} }, 300); };
+  voz.onerror = e => { if (e.error === "not-allowed" || e.error === "service-not-allowed"){ pararVoz(); toast("Sem permissão para o microfone."); } };
+  vozLigada = true; mostrarVoz(); voz.start();
+}
+if (RecVoz) {
+  $("b-voz").hidden = false;
+  $("b-voz").addEventListener("click", () => { if (vozLigada) { pararVoz(); toast("Voz OFF: microfone desligado."); } else { ligarVoz(); toast("Voz ON: diga «câmara» ou «seguinte» e depois a quantidade."); } });
+  mostrarVoz();
+}
+
+// ---- enviar: CSV no modelo de importação do Inventário do backoffice (codbarras;codigo;qtd;pcm; ';', sem BOM) ----
+function csv(){
+  const L = ["codbarras;codigo;qtd;pcm"], todos = artigos();
+  for (const c of Object.keys(estado.linhas)){
+    const a = todos.find(x => String(x.c) === c); if (!a) continue;
+    // pcm = PVP do artigo (preço final de venda), para o inventário ficar valorizado a PVP; fora da lista (PVP 0) fica vazio
+    L.push([a.b || "", String(a.c).startsWith("x") ? "" : a.c, estado.linhas[c].q, a.p ? a.p.toFixed(2).replace(".", ",") : ""].join(";"));
+  }
+  return L.join("\r\n") + "\r\n";
+}
+$("b-enviar").addEventListener("click", async () => {
+  if (!Object.keys(estado.linhas).length) return toast("Ainda não há nada contado.");
+  const nome = `produtos_inventario ${LOJAS[estado.loja]} ${dmy(estado.data)}.csv`, f = new File([csv()], nome, {type: "text/csv"});
+  try {
+    if (navigator.canShare && navigator.canShare({files: [f]})){
+      await navigator.share({files: [f], title: "Contagem " + nome}); estado.enviado = true; guardarEstado(); return toast("Enviado.");
+    }
+  } catch(e){ if (e && e.name === "AbortError") return; }
+  const a = document.createElement("a"); a.href = URL.createObjectURL(f); a.download = nome; a.click();
+  estado.enviado = true; guardarEstado(); toast("Ficheiro guardado.");
+});
+$("b-limpar").addEventListener("click", () => {
+  if (!confirm("Apagar tudo o que está contado nesta contagem?")) return;
+  estado.linhas = {}; estado.hist = []; guardarEstado(); desenhar(); escolher(null);
+});
+
+(async function(){
+  await carregarCatalogo();
+  abrir(ler("tab:ultimo", {loja: 3}).loja || 3, hoje());
+  await carregarFuncionarias();
+  try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch(e){}
+  if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+})();
+</script>
+
+<style>
+.dock #b-cam,.dock #b-voz{display:none!important}
+.dock{display:flex}
+</style>
+<script>
+// ---- versão Intermec CK65: leitor integrado + teclado físico ----
+(function(){
+  const campos = ["leitura", "s-qtd", "s-vol", "s-mpv"].map(i => $(i));
+  $("dock").hidden = false;
+  let tecl = false;
+  $("b-teclado").addEventListener("click", () => {
+    tecl = !tecl; $("b-teclado").setAttribute("aria-pressed", tecl);
+    $("b-teclado").textContent = "⌨ Teclado do ecrã: " + (tecl ? "ON" : "OFF");
+    campos.forEach(c => c.setAttribute("inputmode", tecl ? (c.id === "leitura" ? "search" : "numeric") : "none"));
+    $("leitura").blur(); $("leitura").focus();
+  });
+  // um código lido quando o cursor está nas quantidades (≥ 8 dígitos) é um novo artigo, não uma quantidade
+  for (const id of ["s-qtd", "s-vol", "s-mpv"]) $(id).addEventListener("keydown", e => {
+    const v = e.target.value.trim();
+    if (e.key === "Enter" && /^\d{8,}$/.test(v)){ e.stopImmediatePropagation(); e.preventDefault(); e.target.value = ""; procurar(v); }
+  }, true);
+  // o foco volta sempre ao campo de leitura quando não se está a escrever noutro campo
+  const livre = () => !document.querySelector("dialog[open]") && !/^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement.tagName);
+  document.addEventListener("click", e => { if (livre() && !e.target.closest("button,a,label")) $("leitura").focus(); });
+  document.addEventListener("keydown", e => { if (livre() && e.key.length === 1 && !e.ctrlKey && !e.altKey) $("leitura").focus(); });
+  setInterval(() => { if (livre()) $("leitura").focus(); }, 1500);
+  $("leitura").focus();
+})();
+</script>
+</body>
+</html>
