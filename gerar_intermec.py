@@ -45,9 +45,15 @@ extra = r"""
 .linha .x{min-height:30px;min-width:30px;font-size:.9rem}
 main{padding:2px 8px}
 .controlos{gap:4px}
-.controlos select,.controlos input{min-height:0;height:26px;padding:0 6px;font-size:.72rem;border-radius:6px}
+header h1{display:none}
+header{padding:4px 8px 6px}
+.aviso{padding:0 8px;font-size:.7rem;line-height:1.2}
+h3{margin:2px 0 0;font-size:.7rem}
+.rodape{padding:4px 12px calc(4px + env(safe-area-inset-bottom))}
+.rodape .num{font-size:1rem}
+.rodape .sub{font-size:.7rem}
+.controlos select,.controlos input{min-height:0;height:24px;padding:0 6px;font-size:.72rem;border-radius:6px}
 .controlos #leitura{height:32px;font-size:.85rem}
-header h1{font-size:1rem;margin:0 0 4px}
 .sel .qtd input{min-height:44px;font-size:1.2rem}
 .sel .qtd .btn,.sel .vol .btn{min-height:40px;font-size:.85rem}
 .sel .vol input{min-height:40px;font-size:1rem}
