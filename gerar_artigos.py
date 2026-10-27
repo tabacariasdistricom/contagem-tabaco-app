@@ -14,7 +14,7 @@ from pathlib import Path
 
 import pandas as pd
 
-ORIGEM = Path(r"C:\Users\Backoffice 01\OneDrive\meu\zonsoft\dados\artigos")
+ORIGEM = Path(__file__).resolve().parent.parent / "zonsoft" / "dados" / "artigos"
 SAIDA = Path(__file__).with_name("artigos.json")
 FAMILIA_TABACO = 1
 
