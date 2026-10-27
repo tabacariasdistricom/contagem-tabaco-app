@@ -266,7 +266,7 @@ $("leitura").addEventListener("input", e => {
 
 // ---- artigo selecionado: escrever a quantidade ----
 function escolher(a){
-  sel = a; $("sel").hidden = !a; if (!a) return;
+  sel = a; $("sel").hidden = !a; guardar("tab:sel", a ? {c: String(a.c), loja: estado.loja, data: estado.data, q: ""} : null); if (!a) return;
   const ja = (estado.linhas[a.c] || {}).q || 0;
   $("s-nome").innerHTML = `<span class="cod">${String(a.c).startsWith("x") ? "—" : esc(a.c)}</span> ${esc(a.d)}`;
   $("s-meta").innerHTML = `${esc(a.s)} · ${eur(a.p)} · ${a.b ? esc(a.b) : "sem código de barras"}<br>Já contado: <span class="ja">${ja}</span>` +
@@ -312,6 +312,7 @@ $("s-volsomar").addEventListener("click", () => aplicarVolumes());
 $("s-vol").addEventListener("keydown", e => { if (e.key === "Enter"){ e.preventDefault(); aplicarVolumes(); } });
 $("b-desfazer").addEventListener("click", desfazer);
 $("s-qtd").addEventListener("keydown", e => { if (e.key === "Enter"){ e.preventDefault(); aplicar(true); } });
+$("s-qtd").addEventListener("input", e => { if (sel) guardar("tab:sel", {c: String(sel.c), loja: estado.loja, data: estado.data, q: e.target.value}); });
 
 // ---- lista dos contados ----
 function desenhar(){
@@ -502,8 +503,11 @@ $("b-limpar").addEventListener("click", () => {
 
 (async function(){
   await carregarCatalogo();
+  const p = ler("tab:sel", null);  // o artigo que estava aberto, antes de abrir() o limpar
   abrir(ler("tab:ultimo", {loja: 3}).loja || 3, hoje());
   await carregarFuncionarias();
+  // retoma o artigo que estava aberto (e a quantidade já escrita) se a app foi abaixo antes de gravar
+  if (p && p.loja === estado.loja && p.data === estado.data){ const a = artigos().find(x => String(x.c) === p.c); if (a){ escolher(a); $("s-qtd").value = p.q || ""; } }
   try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch(e){}
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
 })();
