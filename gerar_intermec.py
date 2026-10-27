@@ -37,8 +37,15 @@ extra = r"""
 #b-teclado[aria-pressed="true"]{background:var(--ok);color:#fff;border-color:var(--ok)}
 </style>
 <script>
+// mostra no ecrã qualquer erro de JavaScript (para diagnosticar no CK65)
+window.addEventListener("error", e => {
+  let b = document.getElementById("erro-js");
+  if (!b){ b = document.createElement("div"); b.id = "erro-js"; b.style.cssText = "position:fixed;top:0;left:0;right:0;z-index:99;background:#b00020;color:#fff;font:12px monospace;padding:6px;white-space:pre-wrap"; document.body.appendChild(b); }
+  b.textContent += (e.message || "erro") + " [" + String(e.filename || "").split("/").pop() + ":" + e.lineno + "]
+";
+});
 // ---- versão Intermec CK65: leitor integrado + teclado físico ----
-(function(){
+try { (function(){
   const campos = ["leitura", "s-qtd", "s-vol", "s-mpv"].map(i => $(i));
   let tecl = false;
   $("b-teclado").addEventListener("click", () => {
@@ -62,10 +69,10 @@ extra = r"""
   // o foco volta sempre ao campo de leitura quando não se está a escrever noutro campo
   const livre = () => !document.querySelector("dialog[open]") && !/^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement.tagName);
   document.addEventListener("click", e => { if (livre() && !e.target.closest("button,a,label")) $("leitura").focus(); });
-  document.addEventListener("keydown", e => { if (livre() && e.key.length === 1 && !e.ctrlKey && !e.altKey) $("leitura").focus(); });
+  document.addEventListener("keydown", e => { if (livre() && e.key && e.key.length === 1 && !e.ctrlKey && !e.altKey) $("leitura").focus(); });
   setInterval(() => { if (livre()) $("leitura").focus(); }, 1500);
   $("leitura").focus();
-})();
+})(); } catch (err) { window.dispatchEvent(new ErrorEvent("error", {message: "intermec: " + err.message})); }
 </script>
 </body>"""
 trocar("</body>", extra)
