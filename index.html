@@ -126,6 +126,9 @@ video{width:100%;border-radius:12px;background:#000;max-height:60vh}
   <button class="btn principal" id="b-enviar">Enviar contagem</button>
   <button class="btn" id="b-desfazer" disabled>↩ Desfazer última</button>
   <button class="btn perigo" id="b-limpar">Limpar tudo</button>
+  <button class="btn" id="b-copia">⤓ Cópia</button>
+  <button class="btn" id="b-rest">⤒ Restaurar</button>
+  <input type="file" id="f-rest" accept=".json,application/json" hidden>
 </div>
 
 <div class="rodape">
@@ -223,8 +226,10 @@ function reindexar(){
   for (const a of artigos()){ const k = cb(a.b); if (k) indice.set(k, a); }
 }
 
-const guardarEstado = () => { guardar(chave(estado.loja, estado.data), estado); guardar("tab:ultimo", {loja:estado.loja}); };
+let ficheiroCopia = null;  // ficheiro da cópia de segurança (só onde o navegador deixa regravar o mesmo ficheiro)
+const guardarEstado = () => { estado.alt = (estado.alt || 0) + 1; rotuloCopia(); guardar(chave(estado.loja, estado.data), estado); guardar("tab:ultimo", {loja:estado.loja}); };
 function abrir(loja, data){
+  ficheiroCopia = null;
   estado = ler(chave(loja, data), null) || {loja, data, linhas:{}, extras:[]};
   estado.extras = [...estado.extras, ...ler("tab:extras:" + loja, []).filter(m => !estado.extras.some(e => e.b && e.b === m.b))];
   if (!estado.func) estado.func = ler("tab:func", "");
@@ -325,7 +330,7 @@ function desenhar(){
     `<button class="x" aria-label="Remover">✕</button></div>`).join("") : '<div class="vazio">Ainda não há nada contado. Lê o primeiro código de barras.</div>';
   $("n-cont").textContent = itens.length ? `(${itens.length})` : "";
   $("b-desfazer").disabled = !(estado.hist && estado.hist.length);
-  totais(itens);
+  rotuloCopia(); totais(itens);
 }
 function totais(itens){
   let q = 0, v = 0;
@@ -495,6 +500,41 @@ $("b-enviar").addEventListener("click", async () => {
   } catch(e){ if (e && e.name === "AbortError") return; }
   const a = document.createElement("a"); a.href = URL.createObjectURL(f); a.download = nome; a.click();
   estado.enviado = true; guardarEstado(); toast("Ficheiro guardado.");
+});
+// ---- cópia de segurança: um só ficheiro com a contagem toda (cada cópia substitui a anterior) ----
+function rotuloCopia(){
+  const b = $("b-copia"); if (!b) return;
+  const n = (estado.alt || 0) - (estado.copiaAlt || 0);
+  b.textContent = "⤓ Cópia" + (n > 0 ? ` (+${n})` : "");
+  b.title = estado.copiaT ? "Última cópia: " + new Date(estado.copiaT).toLocaleTimeString("pt-PT", {hour: "2-digit", minute: "2-digit"}) : "Ainda sem cópia";
+}
+$("b-copia").addEventListener("click", async () => {
+  if (!Object.keys(estado.linhas).length) return toast("Ainda não há nada contado.");
+  const nome = `copia ${LOJAS[estado.loja]} ${dmy(estado.data)}.json`, dados = JSON.stringify({v: 1, gerado: new Date().toISOString(), estado});
+  let feito = false;
+  if (window.showSaveFilePicker){
+    try {
+      if (!ficheiroCopia) ficheiroCopia = await showSaveFilePicker({suggestedName: nome, types: [{description: "Cópia da contagem", accept: {"application/json": [".json"]}}]});
+      const w = await ficheiroCopia.createWritable(); await w.write(dados); await w.close(); feito = true;
+    } catch(e){ if (e && e.name === "AbortError") return; ficheiroCopia = null; }
+  }
+  if (!feito){
+    try { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([dados], {type: "application/json"})); a.download = nome; a.click(); }
+    catch(e){ return toast("Não foi possível guardar a cópia."); }
+  }
+  estado.copiaAlt = estado.alt || 0; estado.copiaT = Date.now(); guardar(chave(estado.loja, estado.data), estado); rotuloCopia();
+  toast("Cópia guardada.");
+});
+$("b-rest").addEventListener("click", () => $("f-rest").click());
+$("f-rest").addEventListener("change", async e => {
+  const f = e.target.files[0]; e.target.value = ""; if (!f) return;
+  let d; try { d = JSON.parse(await f.text()); } catch(x){}
+  const c = d && d.v === 1 && d.estado;
+  if (!c || !c.linhas || !LOJAS[c.loja] || !c.data) return toast("Ficheiro de cópia inválido.");
+  const atual = ler(chave(c.loja, c.data), null), n = Object.keys(c.linhas).length, m = atual ? Object.keys(atual.linhas || {}).length : 0;
+  if (!confirm(`Restaurar a cópia de ${LOJAS[c.loja]} ${dmy(c.data)} (${n} artigos)?` + (m ? `
+Substitui a contagem atual (${m} artigos).` : ""))) return;
+  guardar(chave(c.loja, c.data), c); abrir(c.loja, c.data); toast(`Cópia restaurada (${n} artigos).`);
 });
 $("b-limpar").addEventListener("click", () => {
   if (!confirm("Apagar tudo o que está contado nesta contagem?")) return;
