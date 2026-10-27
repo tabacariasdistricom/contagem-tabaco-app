@@ -19,31 +19,41 @@ def trocar(velho, novo):
 trocar("<title>Contagem de tabaco</title>", "<title>Contagem de tabaco (Intermec)</title>")
 trocar('href="manifest.webmanifest"', 'href="manifest-intermec.webmanifest"')
 trocar("register(\"sw.js\")", "register(\"sw.js\")")  # mesmo service worker (mesma origem e catálogo)
-trocar(':root{--dock-h:clamp(84px,20vh,170px)}', ':root{--dock-h:52px}')
+trocar(':root{--dock-h:clamp(84px,20vh,170px)}', ':root{--dock-h:0px}')
 trocar('<button class="btn principal" id="b-cam" aria-label="Ler com a câmara">📷 Picar</button>',
        '<button class="btn principal" id="b-cam" aria-label="Ler com a câmara" hidden>📷 Picar</button>'
-       '<button class="btn" id="b-teclado" aria-pressed="false" style="flex:1;height:var(--dock-h)">⌨ Teclado do ecrã: OFF</button>')
+       )
+trocar('<div class="sub" id="r-art">0 artigos</div>',
+       '<div class="sub" id="r-art">0 artigos</div>'
+       '<button id="b-teclado" aria-pressed="false" title="Teclado do ecrã" aria-label="Teclado do ecrã: desligado">⌨ OFF</button>')
 trocar('inputmode="search" enterkeyhint="search"', 'inputmode="none" enterkeyhint="enter"')
 for i in ("s-qtd", "s-vol", "s-mpv"):
     trocar(f'<input id="{i}" inputmode="numeric"', f'<input id="{i}" inputmode="none"')
 
 extra = r"""
 <style>
-.dock #b-cam,.dock #b-voz{display:none!important}
-.dock{display:flex}
+.dock{display:none!important}
+#b-teclado{min-height:32px;min-width:32px;padding:0 8px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--muted);font:inherit;font-size:.75rem;margin-left:8px}
+#b-teclado[aria-pressed="true"]{background:var(--ok);color:#fff;border-color:var(--ok)}
 </style>
 <script>
 // ---- versão Intermec CK65: leitor integrado + teclado físico ----
 (function(){
   const campos = ["leitura", "s-qtd", "s-vol", "s-mpv"].map(i => $(i));
-  $("dock").hidden = false;
   let tecl = false;
   $("b-teclado").addEventListener("click", () => {
     tecl = !tecl; $("b-teclado").setAttribute("aria-pressed", tecl);
-    $("b-teclado").textContent = "⌨ Teclado do ecrã: " + (tecl ? "ON" : "OFF");
+    $("b-teclado").textContent = "⌨ " + (tecl ? "ON" : "OFF"); $("b-teclado").setAttribute("aria-label", "Teclado do ecrã: " + (tecl ? "ligado" : "desligado"));
     campos.forEach(c => c.setAttribute("inputmode", tecl ? (c.id === "leitura" ? "search" : "numeric") : "none"));
     $("leitura").blur(); $("leitura").focus();
   });
+  // o leitor integrado escreve o código sem Enter: um código completo (≥ 8 dígitos) parado 150 ms é submetido sozinho
+  let esp;
+  $("leitura").addEventListener("input", e => {
+    clearTimeout(esp); const v = e.target.value.trim();
+    if (/^\d{8,}$/.test(v)) esp = setTimeout(() => { if ($("leitura").value.trim() === v) procurar(v); }, 150);
+  });
+  $("leitura").addEventListener("keydown", e => { if (e.key === "Enter") clearTimeout(esp); });
   // um código lido quando o cursor está nas quantidades (≥ 8 dígitos) é um novo artigo, não uma quantidade
   for (const id of ["s-qtd", "s-vol", "s-mpv"]) $(id).addEventListener("keydown", e => {
     const v = e.target.value.trim();
