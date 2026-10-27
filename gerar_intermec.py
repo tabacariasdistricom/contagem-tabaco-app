@@ -35,8 +35,18 @@ for i in ("s-qtd", "s-vol", "s-mpv"):
 extra = r"""
 <style>
 .dock{display:none!important}
-.acoes{grid-template-columns:repeat(4,1fr);gap:6px;padding:6px 8px 10px}
-.acoes .btn{min-height:44px;padding:0 4px;font-size:.78rem;line-height:1.1}
+.acoes{display:flex;flex-wrap:wrap;justify-content:flex-start;gap:4px;padding:4px 8px 8px}
+.acoes .btn{min-height:32px;padding:0 8px;font-size:.7rem;line-height:1.1;border-radius:8px}
+.linha{grid-template-columns:minmax(0,1fr) 48px 30px;gap:4px;padding:3px 6px;margin:3px 0;border-radius:8px}
+.linha .n{font-size:.78rem;line-height:1.2}
+.linha .n small{display:inline;margin-left:4px;font-size:.7rem}
+.linha .cod{font-size:.78rem;padding:0 5px}
+.linha input{min-height:32px;font-size:.9rem;border-radius:6px;padding:0 2px}
+.linha .x{min-height:30px;min-width:30px;font-size:.9rem}
+main{padding:2px 8px}
+.sel .qtd input{min-height:44px;font-size:1.2rem}
+.sel .qtd .btn,.sel .vol .btn{min-height:40px;font-size:.85rem}
+.sel .vol input{min-height:40px;font-size:1rem}
 #b-teclado{min-height:32px;min-width:32px;padding:0 8px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--muted);font:inherit;font-size:.75rem;margin-left:8px}
 #b-teclado[aria-pressed="true"]{background:var(--ok);color:#fff;border-color:var(--ok)}
 </style>
