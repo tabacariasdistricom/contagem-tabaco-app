@@ -23,6 +23,8 @@ trocar(':root{--dock-h:clamp(84px,20vh,170px)}', ':root{--dock-h:0px}')
 trocar('<button class="btn principal" id="b-cam" aria-label="Ler com a câmara">📷 Picar</button>',
        '<button class="btn principal" id="b-cam" aria-label="Ler com a câmara" hidden>📷 Picar</button>'
        )
+for velho, novo in ((">+ Artigo fora da lista<", ">+ Artigo novo<"), (">Enviar contagem<", ">Enviar<"), (">↩ Desfazer última<", ">↩ Desfazer<"), (">Limpar tudo<", ">Limpar<")):
+    trocar(velho, novo)
 trocar('<div class="sub" id="r-art">0 artigos</div>',
        '<div class="sub" id="r-art">0 artigos</div>'
        '<button id="b-teclado" aria-pressed="false" title="Teclado do ecrã" aria-label="Teclado do ecrã: desligado">⌨ OFF</button>')
@@ -33,6 +35,8 @@ for i in ("s-qtd", "s-vol", "s-mpv"):
 extra = r"""
 <style>
 .dock{display:none!important}
+.acoes{grid-template-columns:repeat(4,1fr);gap:6px;padding:6px 8px 10px}
+.acoes .btn{min-height:44px;padding:0 4px;font-size:.78rem;line-height:1.1}
 #b-teclado{min-height:32px;min-width:32px;padding:0 8px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--muted);font:inherit;font-size:.75rem;margin-left:8px}
 #b-teclado[aria-pressed="true"]{background:var(--ok);color:#fff;border-color:var(--ok)}
 </style>
@@ -41,8 +45,7 @@ extra = r"""
 window.addEventListener("error", e => {
   let b = document.getElementById("erro-js");
   if (!b){ b = document.createElement("div"); b.id = "erro-js"; b.style.cssText = "position:fixed;top:0;left:0;right:0;z-index:99;background:#b00020;color:#fff;font:12px monospace;padding:6px;white-space:pre-wrap"; document.body.appendChild(b); }
-  b.textContent += (e.message || "erro") + " [" + String(e.filename || "").split("/").pop() + ":" + e.lineno + "]
-";
+  b.textContent += (e.message || "erro") + " [" + String(e.filename || "").split("/").pop() + ":" + e.lineno + "] ";
 });
 // ---- versão Intermec CK65: leitor integrado + teclado físico ----
 try { (function(){
@@ -58,9 +61,18 @@ try { (function(){
   let esp;
   $("leitura").addEventListener("input", e => {
     clearTimeout(esp); const v = e.target.value.trim();
-    if (/^\d{8,}$/.test(v)) esp = setTimeout(() => { if ($("leitura").value.trim() === v) procurar(v); }, 150);
+    const m = v.match(/\d{8,}/);
+    if (m) esp = setTimeout(() => { if ($("leitura").value.trim() === v) procurar(m[0]); }, 200);
   });
-  $("leitura").addEventListener("keydown", e => { if (e.key === "Enter") clearTimeout(esp); });
+  $("leitura").addEventListener("keydown", e => {
+    if (e.key === "Enter" || e.key === "Tab"){ clearTimeout(esp); const m = e.target.value.match(/\d{8,}/); if (m){ e.preventDefault(); procurar(m[0]); } }
+  });
+  // Enter (ou Tab) enviado pelo leitor logo depois de abrir o artigo não deve gravar a quantidade vazia
+  let abriu = 0; const escolherOrig = escolher;
+  escolher = function(a){ abriu = Date.now(); return escolherOrig.apply(this, arguments); };
+  $("s-qtd").addEventListener("keydown", e => {
+    if ((e.key === "Enter" || e.key === "Tab") && !e.target.value && Date.now() - abriu < 600){ e.stopImmediatePropagation(); e.preventDefault(); }
+  }, true);
   // um código lido quando o cursor está nas quantidades (≥ 8 dígitos) é um novo artigo, não uma quantidade
   for (const id of ["s-qtd", "s-vol", "s-mpv"]) $(id).addEventListener("keydown", e => {
     const v = e.target.value.trim();
